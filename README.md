@@ -221,7 +221,7 @@ Every payment includes a memo stored on-chain via Tempo's TIP-20 standard. "Dinn
 
 ## Team
 
-Built by [Your Name] for the Tempo × Privy Virtual Hackathon.
+Built by Daniel Ukaji for the Tempo × Privy Virtual Hackathon.
 
 ---
 
