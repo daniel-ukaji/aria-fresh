@@ -1,3 +1,4 @@
+//src/components/tambo/mcp-config-modal.tsx
 "use client";
 
 import { createMarkdownComponents } from "@/components/tambo/markdown-components";

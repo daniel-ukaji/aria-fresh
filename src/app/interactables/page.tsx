@@ -1,3 +1,4 @@
+// src/app/interactables/page.tsx
 "use client";
 
 import {

@@ -1,3 +1,4 @@
+//src/components/tambo/mcp-components.tsx
 "use client";
 
 import {

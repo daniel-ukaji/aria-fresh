@@ -1,3 +1,4 @@
+// src/app/interactables/components/settings-panel.tsx
 "use client";
 
 import { withTamboInteractable } from "@tambo-ai/react";

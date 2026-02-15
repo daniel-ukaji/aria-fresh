@@ -1,245 +1,230 @@
-# Tambo Template
+# Aria
 
-A starter Next.js app with [Tambo AI](https://tambo.co) integration for building generative UI/UX applications. Tambo enables AI to dynamically generate and control React components in real time.
+**AI-powered group treasury for splitting expenses with natural language.**
 
-## Get Started
+Built for the Tempo × Privy Hackathon.
 
-1. Create a new project:
+![Aria Demo](./docs/demo.png)
 
-```bash
-npm create-tambo@latest my-tambo-app
+---
+
+## What is Aria?
+
+Aria is a conversational interface for managing shared finances. Instead of clicking through forms and buttons, you just talk:
+
+- "Create a group called Roommates"
+- "Add 0x123... to the group"
+- "Split $120 for utilities"
+- "Pay this split"
+
+Aria understands your intent, executes the logic, and renders interactive UI components—all powered by AI.
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Natural Language** | No forms. Just describe what you want. |
+| **Instant Wallets** | Sign in with email. Privy creates a wallet automatically. |
+| **Group Treasury** | Create groups and manage shared expenses together. |
+| **Smart Splits** | AI calculates per-person amounts automatically. |
+| **On-chain Payments** | One-click batch payments with memos on Tempo. |
+| **Generative UI** | AI renders interactive cards, not just text responses. |
+
+---
+
+## Demo Flow
+```
+You: What's my balance?
+Aria: [renders BalanceCard showing 1,000.00 αUSD]
+
+You: Create a group called Roommates
+Aria: [renders GroupCard with you as the first member]
+
+You: Add 0x1234...7890 to the group
+Aria: [renders updated GroupCard with 2 members]
+
+You: Split $60 for dinner
+Aria: [renders SplitCard showing $30 per person]
+
+You: Pay this split
+Aria: [renders PaymentCard with "Pay $30" button]
+     → Click → Transaction sent on-chain ✓
 ```
 
-2. Install dependencies:
+---
 
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **AI Chat** | [Tambo](https://tambo.co) — Generative UI framework |
+| **Wallet Auth** | [Privy](https://privy.io) — Email → embedded wallet |
+| **Blockchain** | [Tempo](https://tempo.xyz) — L2 with native memos |
+| **Frontend** | Next.js 15, React 19, TypeScript |
+| **Styling** | Tailwind CSS |
+
+---
+
+## Architecture
+```
+┌─────────────────────────────────────────────────────┐
+│                    Frontend                         │
+│  ┌───────────┐  ┌───────────┐  ┌───────────────┐   │
+│  │  Next.js  │  │  Tambo    │  │    Privy      │   │
+│  │   App     │──│  Provider │──│   Provider    │   │
+│  └───────────┘  └───────────┘  └───────────────┘   │
+│         │              │               │            │
+│         ▼              ▼               ▼            │
+│  ┌───────────┐  ┌───────────┐  ┌───────────────┐   │
+│  │   Chat    │  │   Tools   │  │   Embedded    │   │
+│  │    UI     │  │ & Actions │  │    Wallet     │   │
+│  └───────────┘  └───────────┘  └───────────────┘   │
+└─────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│              Tempo Blockchain                       │
+│  ┌───────────────────────────────────────────────┐ │
+│  │  αUSD Token (TIP-20 with memo support)        │ │
+│  │  - transferWithMemo(to, amount, memo)         │ │
+│  │  - Gas paid in αUSD (no native token needed)  │ │
+│  └───────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Generative UI Components
+
+Aria uses Tambo to render interactive components based on context:
+
+| Component | Triggered By | Description |
+|-----------|--------------|-------------|
+| `BalanceCard` | "What's my balance?" | Shows wallet balance with token info |
+| `GroupCard` | "Create a group..." | Displays group with member avatars |
+| `SplitCard` | "Split $X for..." | Shows expense breakdown |
+| `PaymentCard` | "Pay this split" | Confirms and executes payment |
+
+The AI decides which component to render based on the conversation.
+
+---
+
+## Tools (AI Actions)
+
+| Tool | Description |
+|------|-------------|
+| `getBalance` | Query αUSD balance for any address |
+| `createGroup` | Create a new group treasury |
+| `addMember` | Add a wallet address to a group |
+| `createSplit` | Split an expense among group members |
+| `buildBatchPayment` | Prepare batch payment transactions |
+| `listGroups` | List all groups for a user |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- npm or yarn
+
+### Installation
 ```bash
+# Clone the repo
+git clone https://github.com/yourusername/aria.git
+cd aria
+
+# Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env.local
 ```
 
-3. Initialize Tambo (sets up your API key):
-
-```bash
-npx tambo init
+### Environment Variables
+```env
+NEXT_PUBLIC_TAMBO_API_KEY=your_tambo_api_key
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
 ```
 
-Or rename `example.env.local` to `.env.local` and add your Tambo API key (get one free at [tambo.co/dashboard](https://tambo.co/dashboard)).
-
-4. Start the dev server:
-
+### Run Development Server
 ```bash
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000) to use the app.
+Open [http://localhost:3000](http://localhost:3000)
 
-## Routes
+### Fund Your Wallet
 
-| Route | Description |
-|-------|-------------|
-| `/` | Home page with setup checklist and links to demos |
-| `/chat` | Full chat interface with MCP support, voice input, and generative components |
-| `/interactables` | Interactive demo with a chat sidebar controlling a settings panel |
+After logging in, fund your Privy wallet with testnet αUSD:
+```bash
+curl -X POST https://rpc.moderato.tempo.xyz \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tempo_fundAddress","params":["YOUR_WALLET_ADDRESS"],"id":1}'
+```
+
+---
 
 ## Project Structure
-
 ```
 src/
 ├── app/
-│   ├── page.tsx                 # Home page with setup checklist
-│   ├── layout.tsx               # Root layout (Geist fonts, global styles)
-│   ├── globals.css              # Global styles and CSS variables
-│   ├── chat/
-│   │   └── page.tsx             # Chat page with TamboProvider and MCP
-│   └── interactables/
-│       ├── page.tsx             # Interactables demo page
-│       └── components/
-│           └── settings-panel.tsx  # AI-controlled settings form
+│   ├── page.tsx          # Landing page
+│   └── chat/
+│       └── page.tsx      # Chat interface
 ├── components/
-│   ├── ApiKeyCheck.tsx          # API key validation UI
-│   ├── tambo/                   # Tambo-specific components
-│   │   ├── message-thread-full.tsx  # Full chat layout
-│   │   ├── message-input.tsx        # Input with toolbar, file upload, MCP
-│   │   ├── message.tsx              # Single message display
-│   │   ├── graph.tsx                # Generative chart component (bar/line/pie)
-│   │   ├── mcp-components.tsx       # MCP prompt and resource UI
-│   │   ├── mcp-config-modal.tsx     # MCP server configuration modal
-│   │   ├── dictation-button.tsx     # Voice input button
-│   │   ├── elicitation-ui.tsx       # MCP elicitation forms
-│   │   ├── message-suggestions.tsx  # AI-powered suggestions
-│   │   ├── thread-history.tsx       # Thread history sidebar
-│   │   └── ...                      # Additional UI components
-│   └── ui/
-│       └── card-data.tsx        # Generative DataCard component
+│   ├── BalanceCard.tsx   # Balance display component
+│   ├── GroupCard.tsx     # Group display component
+│   ├── SplitCard.tsx     # Split display component
+│   ├── PaymentCard.tsx   # Payment execution component
+│   ├── WalletButton.tsx  # Wallet connect/display
+│   └── ChatWrapper.tsx   # Main chat container
 ├── lib/
-│   ├── tambo.ts                 # Central config: component and tool registration
-│   ├── thread-hooks.ts          # Custom thread management hooks
-│   ├── use-anonymous-user-key.ts  # Anonymous user ID persistence
-│   └── utils.ts                 # Utility functions
-└── services/
-    └── population-stats.ts      # Demo data service (population statistics)
+│   ├── tambo.ts          # Tambo tools & components config
+│   ├── aria-tools.ts     # Tool implementations
+│   └── tempo.ts          # Chain config & ABIs
+└── providers/
+    └── Providers.tsx     # Privy + Wagmi providers
 ```
 
-## Features
+---
 
-### Generative Components
+## Key Innovations
 
-AI dynamically renders registered React components based on user input. The template includes two example components:
+### 1. Conversational Finance
+Traditional expense-splitting apps require navigating menus and filling forms. Aria replaces all of that with natural conversation.
 
-- **Graph** - Recharts-based data visualization (bar, line, pie charts)
-- **DataCard** - Selectable cards with links and descriptions
+### 2. Generative UI
+Instead of returning plain text, the AI renders rich, interactive components. The user sees cards they can click, not instructions to follow.
 
-### Tools
+### 3. Seamless Wallets
+Users sign in with email—no seed phrases, no extensions. Privy creates an embedded wallet instantly. Blockchain complexity is completely hidden.
 
-AI can invoke registered tools to fetch data or perform actions. The template includes:
+### 4. Memos On-Chain
+Every payment includes a memo stored on-chain via Tempo's TIP-20 standard. "Dinner at Nobu" isn't just a note—it's immutable transaction history.
 
-- **countryPopulation** - Country population stats with filtering by continent, sorting, and limits
-- **globalPopulation** - Global population trends with year range filtering
+---
 
-### MCP (Model Context Protocol)
+## Future Improvements
 
-Full MCP support for connecting to external tool servers:
+- [ ] Request payments (reverse flow)
+- [ ] Transaction history view
+- [ ] Multi-token support (αUSD + βUSD)
+- [ ] ENS / Tempo name resolution
+- [ ] Recurring splits
+- [ ] Mobile app
 
-- Configure MCP servers via the in-app modal (HTTP/SSE transport)
-- Browse and insert MCP prompts and resources
-- Elicitation UI for multi-step MCP forms
+---
 
-### Voice Input
+## Team
 
-Speech-to-text via the `DictationButton` component using the `useTamboVoice` hook.
+Built by [Your Name] for the Tempo × Privy Virtual Hackathon.
 
-### Interactables
+---
 
-Components wrapped with `withTamboInteractable` allow AI to control their state directly. The demo shows a settings panel whose fields update in real time as the AI responds.
+## License
 
-### Streaming
-
-Real-time streaming of AI-generated content with progressive UI updates and generation stage indicators.
-
-### Thread Management
-
-Full thread history sidebar with search, thread switching, and new thread creation.
-
-## Customizing
-
-### Register Components
-
-Components are registered in `src/lib/tambo.ts`:
-
-```tsx
-export const components: TamboComponent[] = [
-  {
-    name: "Graph",
-    description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts.",
-    component: Graph,
-    propsSchema: graphSchema,
-  },
-  {
-    name: "DataCard",
-    description:
-      "A component that displays options as clickable cards with links and summaries.",
-    component: DataCard,
-    propsSchema: dataCardSchema,
-  },
-  // Add more components here
-];
-```
-
-To add a new component:
-
-1. Create the component in `src/components/tambo/`
-2. Define a Zod schema for its props
-3. Register it in the `components` array in `src/lib/tambo.ts`
-
-You can also install pre-built components:
-
-```bash
-npx tambo add graph
-```
-
-More info: [Generative Components docs](https://docs.tambo.co/concepts/generative-interfaces/generative-components)
-
-### Register Tools
-
-Tools are defined with `inputSchema` and `outputSchema`:
-
-```tsx
-export const tools: TamboTool[] = [
-  {
-    name: "globalPopulation",
-    description: "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-];
-```
-
-More info: [Tools docs](https://docs.tambo.co/concepts/tools)
-
-### TamboProvider
-
-The `TamboProvider` wraps each page that uses Tambo (see `src/app/chat/page.tsx`):
-
-```tsx
-<TamboProvider
-  apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
-  components={components}
-  tools={tools}
-  tamboUrl={process.env.NEXT_PUBLIC_TAMBO_URL}
-  mcpServers={mcpServers}
-  userKey={userKey}
->
-  {children}
-</TamboProvider>
-```
-
-### Display Components Outside the Chat
-
-Access rendered components from the thread to display them anywhere:
-
-```tsx
-const { thread } = useTambo();
-const latestComponent =
-  thread?.messages[thread.messages.length - 1]?.renderedComponent;
-
-return (
-  <div>
-    {latestComponent && (
-      <div className="my-custom-wrapper">{latestComponent}</div>
-    )}
-  </div>
-);
-```
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with auto-fix |
-
-## Tech Stack
-
-- [Next.js](https://nextjs.org) 15 with App Router
-- [React](https://react.dev) 19
-- [Tambo AI SDK](https://tambo.co) (`@tambo-ai/react`)
-- [Tailwind CSS](https://tailwindcss.com) v4
-- [Recharts](https://recharts.org) for data visualization
-- [TipTap](https://tiptap.dev) for rich text editing
-- [Zod](https://zod.dev) for schema validation
-- [Framer Motion](https://motion.dev) for animations
-
-For full documentation, visit [docs.tambo.co](https://docs.tambo.co).
+MIT

@@ -1,3 +1,4 @@
+// src/components/tambo/dictation-button.tsx
 import { Tooltip } from "@/components/tambo/message-suggestions";
 import { useTamboThreadInput, useTamboVoice } from "@tambo-ai/react";
 import { Loader2Icon, Mic, Square } from "lucide-react";

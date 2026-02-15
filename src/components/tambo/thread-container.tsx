@@ -1,3 +1,4 @@
+//src/components/tambo/thread-container.tsx
 import { cn } from "@/lib/utils";
 import {
   useCanvasDetection,

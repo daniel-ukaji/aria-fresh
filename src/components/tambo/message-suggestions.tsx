@@ -1,3 +1,4 @@
+//src/components/tambo/message-suggestions.tsx
 "use client";
 
 import { MessageGenerationStage } from "./message-generation-stage";

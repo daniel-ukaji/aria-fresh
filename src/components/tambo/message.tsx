@@ -1,3 +1,4 @@
+//src/components/tambo/message.tsx
 "use client";
 
 import { markdownComponents } from "./markdown-components";

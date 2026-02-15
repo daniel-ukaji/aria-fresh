@@ -1,3 +1,4 @@
+//src/components/tambo/message-thread-full.tsx
 "use client";
 
 import type { messageVariants } from "@/components/tambo/message";

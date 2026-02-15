@@ -1,3 +1,4 @@
+//src/components/tambo/message-generation-stage.tsx
 "use client";
 
 import { cn } from "@/lib/utils";

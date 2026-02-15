@@ -1,3 +1,4 @@
+//src/services/population-stats.ts
 // This service provides mock population statistics data for global trends and country-specific information
 
 interface GlobalPopulation {

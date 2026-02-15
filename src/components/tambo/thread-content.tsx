@@ -1,3 +1,4 @@
+//src/components/tambo/thread-content.tsx
 "use client";
 
 import {

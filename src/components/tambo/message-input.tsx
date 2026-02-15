@@ -1,3 +1,4 @@
+//src/components/tambo/message-input.tsx
 "use client";
 
 import { ElicitationUI } from "@/components/tambo/elicitation-ui";
