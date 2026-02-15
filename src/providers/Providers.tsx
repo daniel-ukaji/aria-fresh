@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider, createConfig } from '@privy-io/wagmi'
 import { http } from 'viem'
 import { tempoTestnet } from '@/lib/tempo'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const wagmiConfig = createConfig({
   chains: [tempoTestnet],
@@ -15,6 +15,7 @@ const wagmiConfig = createConfig({
 })
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -24,9 +25,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
     },
   }))
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Don't render Privy during SSR/build
+  if (!mounted) {
+    return <>{children}</>
+  }
+
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
+
+  if (!appId) {
+    return <>{children}</>
+  }
+
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      appId={appId}
       config={{
         appearance: {
           theme: 'light',
