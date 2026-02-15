@@ -21,7 +21,6 @@ type Split = {
   description: string
   perPerson: string
   members: string[]
-  customAmounts?: { address: string; email?: string; amount: string }[]
   status: 'pending' | 'executed'
 }
 
@@ -42,17 +41,25 @@ const emailToWallet = globalForAria.emailToWallet
 
 // Tool: Get wallet balance
 export async function getBalance({ address }: { address: string }) {
-  const balance = await publicClient.readContract({
-    address: TOKENS.ALPHA_USD,
-    abi: TIP20_ABI,
-    functionName: 'balanceOf',
-    args: [address as `0x${string}`],
-  })
-  
-  return {
-    address,
-    balance: formatUnits(balance as bigint, 6),
-    token: 'αUSD',
+  try {
+    const balance = await publicClient.readContract({
+      address: TOKENS.ALPHA_USD,
+      abi: TIP20_ABI,
+      functionName: 'balanceOf',
+      args: [address as `0x${string}`],
+    })
+    
+    return {
+      address,
+      balance: formatUnits(balance as bigint, 6),
+      token: 'αUSD',
+    }
+  } catch (error) {
+    return {
+      address,
+      balance: '0',
+      token: 'αUSD',
+    }
   }
 }
 
@@ -65,7 +72,7 @@ export async function createGroup({
   creatorAddress: string 
 }) {
   const id = `group_${Date.now()}`
-  const group = {
+  const group: Group = {
     id,
     name,
     members: [{ address: creatorAddress }],
@@ -74,38 +81,14 @@ export async function createGroup({
   groups.set(id, group)
   
   return {
-    success: true,
-    group,
-    message: `Created group "${name}"`,
+    id: group.id,
+    name: group.name,
+    members: group.members,
+    createdBy: group.createdBy,
   }
 }
 
-// Tool: Add member to group by wallet
-export async function addMember({ 
-  groupId, 
-  memberAddress,
-  email,
-}: { 
-  groupId: string
-  memberAddress: string
-  email?: string
-}) {
-  const group = groups.get(groupId)
-  if (!group) {
-    return { success: false, error: 'Group not found' }
-  }
-  
-  group.members.push({ address: memberAddress, email })
-  if (email) emailToWallet.set(email.toLowerCase(), memberAddress)
-  
-  return {
-    success: true,
-    group,
-    message: `Added member to ${group.name}`,
-  }
-}
-
-// Tool: Add member by email (stores mapping for later use)
+// Tool: Add member by email
 export async function addMemberByEmail({ 
   groupId, 
   email,
@@ -115,27 +98,35 @@ export async function addMemberByEmail({
 }) {
   const group = groups.get(groupId)
   if (!group) {
-    return { success: false, error: 'Group not found' }
+    return { error: 'Group not found' }
   }
   
-  // Generate a deterministic wallet address from email for demo purposes
-  // In production, this would call Privy API
-  const hash = email.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0)
-  const walletAddress = `0x${Math.abs(hash).toString(16).padStart(40, '0').slice(0, 40)}`
+  // Check if already have wallet for this email
+  let walletAddress = emailToWallet.get(email.toLowerCase())
+  let isNewWallet = false
+  
+  if (!walletAddress) {
+    // Generate deterministic address from email for demo
+    const hash = email.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0)
+    walletAddress = `0x${Math.abs(hash).toString(16).padStart(40, '0').slice(0, 40)}`
+    emailToWallet.set(email.toLowerCase(), walletAddress)
+    isNewWallet = true
+  }
   
   group.members.push({ address: walletAddress, email })
-  emailToWallet.set(email.toLowerCase(), walletAddress)
   
   return {
-    success: true,
-    group,
-    email,
-    walletAddress,
-    message: `Added ${email} to ${group.name}`,
+    id: group.id,
+    name: group.name,
+    members: group.members,
+    createdBy: group.createdBy,
+    addedEmail: email,
+    addedWallet: walletAddress,
+    walletCreated: isNewWallet,
   }
 }
 
-// Tool: Send equal amounts to group
+// Tool: Create equal split
 export async function createSplit({
   groupId,
   amount,
@@ -147,12 +138,12 @@ export async function createSplit({
 }) {
   const group = groups.get(groupId)
   if (!group) {
-    return { success: false, error: 'Group not found' }
+    return { error: 'Group not found' }
   }
   
   const otherMembers = group.members.slice(1)
   if (otherMembers.length === 0) {
-    return { success: false, error: 'Add members first' }
+    return { error: 'Add members to the group first' }
   }
   
   const totalAmount = parseFloat(amount)
@@ -171,96 +162,17 @@ export async function createSplit({
   splits.set(splitId, split)
   
   return {
-    success: true,
-    split: {
-      id: splitId,
-      groupName: group.name,
-      amount,
-      description,
-      perPerson,
-      memberCount: otherMembers.length,
-      status: 'pending',
-    },
-    message: `Sending $${perPerson} to each of ${otherMembers.length} members`,
-  }
-}
-
-// Tool: Prepare custom payment (returns data for PaymentCard)
-export async function prepareCustomPayment({
-  payments,
-  memo,
-  payerAddress,
-}: {
-  payments: { email: string; amount: string }[]
-  memo: string
-  payerAddress: string
-}) {
-  const resolvedPayments = []
-  
-  for (const payment of payments) {
-    // Look up wallet from our local cache, or generate one
-    let walletAddress = emailToWallet.get(payment.email.toLowerCase())
-    
-    if (!walletAddress) {
-      // Generate deterministic address for demo
-      const hash = payment.email.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0)
-      walletAddress = `0x${Math.abs(hash).toString(16).padStart(40, '0').slice(0, 40)}`
-      emailToWallet.set(payment.email.toLowerCase(), walletAddress)
-    }
-    
-    resolvedPayments.push({
-      address: walletAddress,
-      email: payment.email,
-      amount: payment.amount,
-    })
-  }
-  
-  const totalAmount = resolvedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0).toFixed(2)
-  const memoHex = toHex(memo.slice(0, 32).padEnd(32, '\0'), { size: 32 })
-  
-  // Build transaction calls
-  const calls = resolvedPayments.map(payment => {
-    const amountInUnits = parseUnits(payment.amount, 6)
-    return {
-      to: TOKENS.ALPHA_USD,
-      data: encodeFunctionData({
-        abi: TIP20_ABI,
-        functionName: 'transferWithMemo',
-        args: [payment.address as `0x${string}`, amountInUnits, memoHex],
-      }),
-      value: '0',
-      recipient: payment.address,
-      amount: amountInUnits.toString(),
-      memoHex,
-    }
-  })
-  
-  // Store for reference
-  const splitId = `custom_${Date.now()}`
-  splits.set(splitId, {
     id: splitId,
-    groupId: 'custom',
-    amount: totalAmount,
-    description: memo,
-    perPerson: 'custom',
-    members: resolvedPayments.map(p => p.address),
-    customAmounts: resolvedPayments,
+    groupName: group.name,
+    amount: amount,
+    description: description,
+    perPerson: perPerson,
+    memberCount: otherMembers.length,
     status: 'pending',
-  })
-  
-  return {
-    success: true,
-    splitId,
-    totalAmount,
-    recipientCount: resolvedPayments.length,
-    memo,
-    calls,
-    payments: resolvedPayments,
-    summary: `$${resolvedPayments.map(p => `${p.amount} to ${p.email}`).join(', $')}`,
   }
 }
 
-// Tool: Build batch payment for a split
+// Tool: Build batch payment
 export async function buildBatchPayment({
   splitId,
   payerAddress,
@@ -270,58 +182,33 @@ export async function buildBatchPayment({
 }) {
   const split = splits.get(splitId)
   if (!split) {
-    return { success: false, error: 'Split not found' }
+    return { error: 'Split not found' }
   }
   
   const memoHex = toHex(split.description.slice(0, 32).padEnd(32, '\0'), { size: 32 })
+  const amountPerPerson = parseUnits(split.perPerson, 6)
   
-  let calls
-  let totalAmount: string
+  const calls = split.members.map(recipient => ({
+    to: TOKENS.ALPHA_USD,
+    data: encodeFunctionData({
+      abi: TIP20_ABI,
+      functionName: 'transferWithMemo',
+      args: [recipient as `0x${string}`, amountPerPerson, memoHex],
+    }),
+    value: '0',
+    recipient,
+    amount: amountPerPerson.toString(),
+    memoHex,
+  }))
   
-  if (split.customAmounts && split.customAmounts.length > 0) {
-    calls = split.customAmounts.map(payment => {
-      const amountInUnits = parseUnits(payment.amount, 6)
-      return {
-        to: TOKENS.ALPHA_USD,
-        data: encodeFunctionData({
-          abi: TIP20_ABI,
-          functionName: 'transferWithMemo',
-          args: [payment.address as `0x${string}`, amountInUnits, memoHex],
-        }),
-        value: '0',
-        recipient: payment.address,
-        amount: amountInUnits.toString(),
-        memoHex,
-      }
-    })
-    totalAmount = split.amount
-  } else {
-    const amountPerPerson = parseUnits(split.perPerson, 6)
-    calls = split.members.map(recipient => ({
-      to: TOKENS.ALPHA_USD,
-      data: encodeFunctionData({
-        abi: TIP20_ABI,
-        functionName: 'transferWithMemo',
-        args: [recipient as `0x${string}`, amountPerPerson, memoHex],
-      }),
-      value: '0',
-      recipient,
-      amount: amountPerPerson.toString(),
-      memoHex,
-    }))
-    totalAmount = (parseFloat(split.perPerson) * split.members.length).toFixed(2)
-  }
+  const totalAmount = (parseFloat(split.perPerson) * split.members.length).toFixed(2)
   
   return {
-    success: true,
     splitId,
+    totalAmount,
+    recipientCount: split.members.length,
+    memo: split.description,
     calls,
-    summary: {
-      totalRecipients: calls.length,
-      amountPerPerson: split.perPerson,
-      totalAmount,
-      memo: split.description,
-    },
   }
 }
 

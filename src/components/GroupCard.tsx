@@ -14,7 +14,7 @@ export const groupCardSchema = z.object({
 
 export type GroupCardProps = z.infer<typeof groupCardSchema>
 
-function MemberAvatar({ address, isCreator }: { address: string; isCreator: boolean }) {
+function MemberAvatar({ address, email, isCreator }: { address: string; email?: string; isCreator: boolean }) {
   if (!address) return null
   
   const hue = parseInt(address.slice(2, 8), 16) % 360
@@ -28,11 +28,18 @@ function MemberAvatar({ address, isCreator }: { address: string; isCreator: bool
         {address.slice(2, 4).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900 font-mono">
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </p>
+        {email ? (
+          <>
+            <p className="text-sm font-medium text-neutral-900">{email}</p>
+            <p className="text-xs text-neutral-400 font-mono">{address.slice(0, 6)}...{address.slice(-4)}</p>
+          </>
+        ) : (
+          <p className="text-sm font-medium text-neutral-900 font-mono">
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </p>
+        )}
         {isCreator && (
-          <p className="text-xs text-violet-600 font-medium">Admin</p>
+          <span className="inline-block mt-1 text-xs text-violet-600 font-medium bg-violet-50 px-2 py-0.5 rounded-full">Admin</span>
         )}
       </div>
     </div>
@@ -68,7 +75,8 @@ export function GroupCard({ id, name, members, createdBy }: GroupCardProps) {
         {validMembers.map((member) => (
           <MemberAvatar 
             key={member.address} 
-            address={member.address} 
+            address={member.address}
+            email={member.email}
             isCreator={createdBy ? member.address.toLowerCase() === createdBy.toLowerCase() : false}
           />
         ))}

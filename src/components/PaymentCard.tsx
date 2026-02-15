@@ -28,6 +28,8 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
 
   const embeddedWallet = wallets.find(w => w.walletClientType === 'privy')
 
+  if (!splitId || !calls) return null
+
   const handlePayment = async () => {
     if (!embeddedWallet) {
       setError('No wallet connected')
@@ -41,7 +43,7 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
       const provider = await embeddedWallet.getEthereumProvider()
       
       for (const call of calls) {
-        const txHash = await provider.request({
+        const hash = await provider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: embeddedWallet.address,
@@ -50,7 +52,7 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
             value: '0x0',
           }],
         })
-        setTxHash(txHash as string)
+        setTxHash(hash as string)
       }
       
       setStatus('success')
@@ -60,8 +62,6 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
       setStatus('error')
     }
   }
-
-  if (!splitId || !calls) return null
 
   return (
     <div className="card p-6 max-w-xs animate-in">
@@ -79,7 +79,7 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
       </div>
 
       <h3 className="text-xl font-semibold text-neutral-900 mb-1">Confirm Payment</h3>
-      <p className="text-sm text-neutral-500 mb-6">{memo}</p>
+      <p className="text-sm text-neutral-500 mb-6">{memo || 'Payment'}</p>
 
       <div className="bg-neutral-50 rounded-2xl p-4 space-y-3 mb-6">
         <div className="flex justify-between items-baseline">
@@ -96,7 +96,7 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
       {status === 'idle' && (
         <button
           onClick={handlePayment}
-          className="btn-primary w-full justify-center"
+          className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-xl transition-colors"
         >
           Pay ${totalAmount} αUSD
         </button>
@@ -133,7 +133,7 @@ export function PaymentCard({ splitId, totalAmount, recipientCount, memo, calls 
           <p className="text-sm text-red-600 mb-3">{error}</p>
           <button
             onClick={handlePayment}
-            className="btn-secondary"
+            className="py-2 px-4 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-sm transition-colors"
           >
             Try again
           </button>
